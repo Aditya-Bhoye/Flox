@@ -1,0 +1,4 @@
+# Only the settings Flox needs; the rest use Supabase defaults.
+[functions.monthly-summary]
+# Called by pg_cron with a shared secret header, not a user login.
+verify_jwt = false

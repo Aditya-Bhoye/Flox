@@ -1,0 +1,9 @@
+# Copy to key.properties (git-ignored) and fill in.
+# Create the keystore once with:
+#   keytool -genkey -v -keystore %USERPROFILE%\flox-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+# Keep the .jks file and passwords somewhere safe; losing them means you
+# cannot publish updates.
+storePassword=
+keyPassword=
+keyAlias=upload
+storeFile=C:/Users/YOU/flox-upload.jks

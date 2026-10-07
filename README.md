@@ -1,53 +1,99 @@
 # Flox
 
-A Flutter app splits group expenses and predicts loan approval.
+Split expenses with friends. Flutter app with Google sign-in and a Supabase
+backend.
 
-## Features
+```
+lib/          Flutter app code (Android, iOS)
+test/         Unit tests
+supabase/     Database schema + Row Level Security policies
+```
 
-- **Split expenses.** Pick people from your phone contacts and split a bill with them.
-- **Track debts.** See who owes you and whom you owe, and settle an amount.
-- **Loan approval check.** Enter six details and a machine learning model predicts "Approved" or "Rejected".
-- **Google sign-in.** Accounts and data live in Supabase.
+## One-time setup
 
-## How the loan check works
+### 1. Database
 
-1. The app sends six values to a FastAPI server: CIBIL score, loan term, loan amount, annual income, bank assets and residential assets.
-2. The server loads a trained XGBoost classifier from `loan_model_top6.pkl`.
-3. It returns the prediction to the app.
+In the Supabase dashboard open **SQL Editor → New query**, paste
+[`supabase/schema.sql`](supabase/schema.sql) and run it. It creates the
+`friends`, `split_items` and `split_debts` tables, turns on Row Level Security
+so each user can only read and write their own rows, and adds the
+`create_split` function that saves a split and its debts in one transaction.
 
-`LoanApproval.ipynb` holds the training: data cleaning, feature selection down to the top six features, and model evaluation.
+Check afterwards under **Authentication → Policies** that all three tables show
+RLS as enabled.
 
-## Project layout
+### 2. Google sign-in (app ID is `com.flox.app`)
 
-| Path | What it holds |
-|---|---|
-| `mobile_app/` | The Flutter app |
-| `backend/main.py` | The FastAPI prediction server |
-| `loan_model_top6.pkl` | The trained model |
-| `LoanApproval.ipynb` | Training notebook |
+The app ID changed from `com.example.mobile_app`, so the old Google OAuth
+clients no longer match. In Google Cloud Console → **APIs & Services →
+Credentials**:
+
+- **Android:** create an OAuth client of type Android with package name
+  `com.flox.app` and the SHA-1 of every key you sign with. Get the SHA-1s with
+  `cd android && gradlew signingReport` (debug key) and
+  `keytool -list -v -keystore <your .jks>` (release key).
+- **iOS:** create an OAuth client of type iOS with bundle ID `com.flox.app`,
+  then update `googleIosClientId` in `lib/config.dart` and
+  the reversed client ID URL scheme in `ios/Runner/Info.plist`.
+- In Supabase → **Authentication → Providers → Google**, add the new client IDs
+  to *Authorized Client IDs*.
+
+### 3. Release signing key (Android)
+
+Release builds refuse to build without a real key.
+
+```
+keytool -genkey -v -keystore %USERPROFILE%\flox-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+Copy `android/key.properties.example` to `key.properties` (it is
+git-ignored) and fill in the passwords and path. Back up the `.jks` file and
+passwords: without them you cannot publish updates.
 
 ## Run
 
-Start the backend:
-
-```bash
-cd backend
-pip install -r requirements.txt
-python main.py
 ```
-
-The server listens on port 8000.
-
-Then run the app:
-
-```bash
-cd mobile_app
 flutter pub get
 flutter run
 ```
 
-On the Android emulator the app reaches the server at `10.0.2.2:8000`. On web and desktop it uses `localhost:8000`.
+From WSL, call the Windows Flutter through `cmd.exe /c "flutter ..."`.
 
-## Stack
+## Test
 
-Flutter · Dart · Supabase · Python · FastAPI · XGBoost · scikit-learn · pandas
+```
+flutter test
+```
+
+## Release build
+
+```
+flutter build appbundle --obfuscate --split-debug-info=build/symbols
+```
+
+Keep `build/symbols` for each release so you can read crash stack traces.
+
+## How data is stored
+
+- Supabase is the source of truth. Each user only ever sees their own rows
+  (Row Level Security).
+- Money is stored as whole paise (`bigint`), so splits always add up exactly.
+- Friends are identified by ID, not by name, so two friends called "Rahul"
+  have separate balances. Removing a friend hides them but keeps their history.
+- The device keeps an encrypted per-user cache (Android Keystore / iOS
+  Keychain) so the app opens instantly and works read-only offline. It is
+  excluded from backups and deleted on sign-out.
+- Fonts (Inter, OFL licence) and images are bundled; the app makes no requests
+  to third-party servers apart from Google sign-in and Supabase.
+
+## Monthly summary email
+
+On the 1st of every month at 9:00 AM IST, each user gets an email from
+floxsplitapp@gmail.com with last month's expenses, totals per friend and what
+is still remaining. Code: `supabase/functions/monthly-summary/index.ts`;
+schedule: `supabase/monthly_email.sql`.
+
+Setup: create a Gmail App Password for floxsplitapp@gmail.com, deploy the
+function with JWT verification off, set the secrets `GMAIL_USER`,
+`GMAIL_APP_PASSWORD` and `CRON_SECRET`, then run `monthly_email.sql` with the
+same `CRON_SECRET`.
