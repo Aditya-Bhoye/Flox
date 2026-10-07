@@ -22,7 +22,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _titles = ["Home", "Splitwise", "Setting"];
+  static const _titles = ["Home", "Splits", "Settings"];
   static const _splitwiseIndex = 1;
 
   int _selectedIndex = 0;

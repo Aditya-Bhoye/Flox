@@ -10,8 +10,8 @@ class CustomBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final navItems = [
       _buildNavItem(Icons.home_rounded, 0, "Home"),
-      _buildNavItem(Icons.calendar_today_rounded, 1, "Splitwise"),
-      _buildNavItem(Icons.track_changes_rounded, 2, "Setting"),
+      _buildNavItem(Icons.calendar_today_rounded, 1, "Splits"),
+      _buildNavItem(Icons.track_changes_rounded, 2, "Settings"),
     ];
 
     // Solid black bar; the selected tab is a white pill.
