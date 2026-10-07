@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/friend.dart';
 import '../../models/ledger.dart';
 import '../../models/money.dart';
 import '../../services/flox_repository.dart';
-import '../../widgets/flox_colors.dart';
 
 class HomeTab extends StatelessWidget {
   final FloxRepository repo;
@@ -46,30 +46,87 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  /// One side of the balance summary: what you are owed or what you owe.
-  Widget _buildBalanceTile({required String label, required int paise, required Color color, required IconData icon}) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 14),
-            Text(label.toUpperCase(),
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(Money.format(paise),
-                  style: TextStyle(color: color, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-            ),
-          ],
+  /// Showcase credit card. Only the front card shows the number, holder and expiry.
+  Widget _buildCreditCard({
+    required Color color,
+    required String cardNumber,
+    required String expiryDate,
+    required String cardHolder,
+    required bool isFront,
+  }) {
+    TextStyle label() => TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10);
+    const value = TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500);
+
+    return CustomPaint(
+      painter: CardShadowPainter(),
+      child: ClipPath(
+        clipper: CardShapeClipper(),
+        child: Container(
+          height: 220,
+          width: double.infinity,
+          padding: const EdgeInsets.all(24.0),
+          color: color,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomPaint(size: const Size(40, 30), painter: ChipPainter()),
+                  const Text(
+                    'VISA',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+              if (isFront) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
+                  child: Text(
+                    cardNumber,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 3.0,
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Card Holder Name', style: label()),
+                          const SizedBox(height: 4),
+                          Text(cardHolder, style: value, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Expiry Date', style: label()),
+                        const SizedBox(height: 4),
+                        Text(expiryDate, style: value),
+                      ],
+                    ),
+                  ],
+                ),
+              ] else
+                const Spacer(),
+            ],
+          ),
         ),
       ),
     );
@@ -150,6 +207,7 @@ class HomeTab extends StatelessWidget {
     final net = owedToYou - youOwe;
     final friends = repo.friends;
     final recent = repo.splits.take(5).toList(); // splits are newest first
+    final holder = Supabase.instance.client.auth.currentUser?.userMetadata?['name'] as String? ?? 'You';
 
     return SafeArea(
       child: Column(
@@ -254,16 +312,52 @@ class HomeTab extends StatelessWidget {
                 children: [
                   const SizedBox(height: 30),
 
-                  // Balance summary
-                  Row(
-                    children: [
-                      _buildBalanceTile(label: 'You are owed', paise: owedToYou, color: FloxColors.owed, icon: Icons.south_west_rounded),
-                      const SizedBox(width: 12),
-                      _buildBalanceTile(label: 'You owe', paise: youOwe, color: FloxColors.owe, icon: Icons.north_east_rounded),
-                    ],
+                  // Card stack
+                  SizedBox(
+                    height: 340,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: _buildCreditCard(
+                            color: const Color(0xFF1E1E1E),
+                            cardNumber: '',
+                            expiryDate: '',
+                            cardHolder: '',
+                            isFront: false,
+                          ),
+                        ),
+                        Positioned(
+                          top: 55,
+                          left: 0,
+                          right: 0,
+                          child: _buildCreditCard(
+                            color: const Color(0xFF4285F4),
+                            cardNumber: '',
+                            expiryDate: '',
+                            cardHolder: '',
+                            isFront: false,
+                          ),
+                        ),
+                        Positioned(
+                          top: 110,
+                          left: 0,
+                          right: 0,
+                          child: _buildCreditCard(
+                            color: const Color(0xFF0F1115),
+                            cardNumber: '**** **** **** 2345',
+                            expiryDate: '02/30',
+                            cardHolder: holder,
+                            isFront: true,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
 
                   // History Section
                   Row(
@@ -317,4 +411,103 @@ class HomeTab extends StatelessWidget {
       ),
     );
   }
+}
+
+class CardShapeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final Path path = Path();
+    const double cornerRadius = 24.0;
+    const double notchDepth = 15.0; // Depth of the notch
+    const double notchWidth = 120.0; // Width of the notch top
+    final double notchStart = (size.width - notchWidth) / 2;
+    final double notchEnd = (size.width + notchWidth) / 2;
+
+    // Start from top-left corner
+    path.moveTo(0, cornerRadius);
+    
+    // Top-left corner
+    path.quadraticBezierTo(0, 0, cornerRadius, 0);
+
+    // Line to notch start
+    path.lineTo(notchStart - 15, 0);
+
+    // Curve down into notch
+    path.cubicTo(
+      notchStart, 0, 
+      notchStart, notchDepth, 
+      notchStart + 15, notchDepth
+    );
+
+    // Notch bottom line
+    path.lineTo(notchEnd - 15, notchDepth);
+
+    // Curve up from notch
+    path.cubicTo(
+      notchEnd, notchDepth, 
+      notchEnd, 0, 
+      notchEnd + 15, 0
+    );
+
+    // Line to top-right corner
+    path.lineTo(size.width - cornerRadius, 0);
+
+    // Top-right corner
+    path.quadraticBezierTo(size.width, 0, size.width, cornerRadius);
+
+    // Right side
+    path.lineTo(size.width, size.height - cornerRadius);
+
+    // Bottom-right corner
+    path.quadraticBezierTo(size.width, size.height, size.width - cornerRadius, size.height);
+
+    // Bottom side
+    path.lineTo(cornerRadius, size.height);
+
+    // Bottom-left corner
+    path.quadraticBezierTo(0, size.height, 0, size.height - cornerRadius);
+
+    // Close path
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class CardShadowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Path path = CardShapeClipper().getClip(size);
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.5), 10.0, true);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class ChipPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFE0C489)
+      ..style = PaintingStyle.fill;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), const Radius.circular(4)),
+      paint,
+    );
+
+    final linePaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawLine(Offset(size.width * 0.3, 0), Offset(size.width * 0.3, size.height), linePaint);
+    canvas.drawLine(Offset(size.width * 0.7, 0), Offset(size.width * 0.7, size.height), linePaint);
+    canvas.drawLine(Offset(0, size.height * 0.5), Offset(size.width, size.height * 0.5), linePaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
