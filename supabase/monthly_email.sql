@@ -16,7 +16,7 @@ select cron.schedule(
   '30 3 1 * *',
   $$
   select net.http_post(
-    url := 'https://mvuwesaebtagnxqocjgh.supabase.co/functions/v1/monthly-summary',
+    url := 'https://yomyhrmbniiexwwweuwk.supabase.co/functions/v1/monthly-summary',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'flox_cron_secret')
@@ -32,7 +32,7 @@ select cron.schedule(
 -- this statement, then check the inbox (and Spam).
 --
 -- select net.http_post(
---   url := 'https://mvuwesaebtagnxqocjgh.supabase.co/functions/v1/monthly-summary',
+--   url := 'https://yomyhrmbniiexwwweuwk.supabase.co/functions/v1/monthly-summary',
 --   headers := jsonb_build_object(
 --     'Content-Type', 'application/json',
 --     'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'flox_cron_secret')

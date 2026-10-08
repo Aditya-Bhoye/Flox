@@ -6,11 +6,11 @@ class FloxConfig {
   FloxConfig._();
 
   // Supabase → Project Settings → API.
-  static const supabaseUrl = 'https://mvuwesaebtagnxqocjgh.supabase.co';
-  static const supabasePublishableKey = 'sb_publishable_m3g5jn9MpCUFq-UuULAJWw_AOs4rUOL';
+  static const supabaseUrl = 'https://yomyhrmbniiexwwweuwk.supabase.co';
+  static const supabasePublishableKey = 'sb_publishable_ntuEojbcZPUGrgY7I1smXA_DXSdOTDV';
 
   // Google Cloud Console → APIs & Services → Credentials.
-  static const googleWebClientId = '645596606013-ujbe8lfdge6airsp53cdf5obbvli5kl6.apps.googleusercontent.com';
+  static const googleWebClientId = '1070145833168-199kgmll96d86bik7deg4vdr7gh8j061.apps.googleusercontent.com';
   // Empty until an iOS client exists for this account; only Android is set up.
   static const googleIosClientId = '';
 }
